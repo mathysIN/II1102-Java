@@ -50,7 +50,7 @@ public class Chess {
                 System.out.println();
                 System.out.println(Color.BOLD + Color.YELLOW + "Echec et mat!" + Color.RESET);
                 System.out.println(players[getOtherColor(currentPlayer.getColor())].getName() + " gagne la partie !");
-//                break;
+                break;
             }
         }
     }
