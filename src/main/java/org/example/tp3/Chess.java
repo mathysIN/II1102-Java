@@ -9,6 +9,7 @@ import java.util.stream.Stream;
 public class Chess {
     private Scanner scanner = new Scanner(System.in);
     private Cell[][] board;
+    private Set<Cell> highlightedCells = new HashSet<Cell>();
     private Player[] players = new Player[2];
     private Player currentPlayer;
     private King[] kings = new King[2];
@@ -24,6 +25,9 @@ public class Chess {
         createPlayers();
         System.out.println(Color.BOLD + Color.BLUE + "C'est parti !".toUpperCase() + Color.RESET);
         initialiseBoard();
+//        ArrayList<String> predefinedMoves = new ArrayList<>() {
+//            add()
+//        }
         while (true) {
             String move;
             System.out.println("\nC'est au tour de " + Color.BOLD + currentPlayer.getName() + " de jouer !");
@@ -35,16 +39,26 @@ public class Chess {
                 move = askMove();
             }
             while (!isValidMove(move));
-            selectedPiece = null;
+
+            highlightedCells.clear();
             updateBoard(move);
             switchPlayer();
-            State state = isCheckMate(kings[currentPlayer.getColor()]);
+            King king = kings[currentPlayer.getColor()];
+            State state = isCheckMate(king);
+            Cell[] _move = getCellsFromMove(move);
+            boolean futureCheckMate = isFuturCheckMate(king, _move[0], _move[1]);
+            if(state == State.NONE && futureCheckMate) {
+                System.out.println();
+                System.out.println(Color.BOLD + Color.YELLOW + "Pat !" + Color.RESET);
+                System.out.println("Egalité");
+                break;
+            }
             if(state == State.CHECK) {
                 System.out.println(Color.BOLD + Color.YELLOW + "Echec !" + Color.RESET);
             }
             if(state == State.CHECKMATE) {
-                // printBoard();
-                // System.out.flush();
+                 printBoard();
+                 System.out.flush();
                 // FIXME: is printed too late
 
                 System.out.println();
@@ -76,7 +90,7 @@ public class Chess {
 
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < 8; j++) {
-                board[j][i == 0 ? 6 : 1].setPiece(new Pion(board[j][i == 0 ? 6 : 1].getPosition(), i));
+                board[j][i == 0 ? 6 : 1].setPiece(new Pawn(board[j][i == 0 ? 6 : 1].getPosition(), i));
             }
             for (int j = 0; j < 2; j++) {
                 board[j == 0 ? 0 : 7][i == 0 ? 7 : 0].setPiece(new Rook(board[j == 0 ? 0 : 7][i == 0 ? 7 : 0].getPosition(), i));
@@ -96,12 +110,11 @@ public class Chess {
         for (int i = 0; i < board.length; i++) {
             Cell[] column = board[i];
             System.out.print(Color.BOLD);
-            Set<Cell> moves = selectedPiece != null ? getPotentialMoves(selectedPiece) : null;
             for (int j = 0; j < column.length; j++) {
                 Cell cell = board[j][i];
                 if(cell == null) continue;
                 if(j == 0) System.out.print((8 - i) + " ");
-                if(moves != null && moves.contains(cell)) {
+                if(highlightedCells.contains(cell)) {
                     System.out.print(Color.BACKGROUND_YELLOW);
                 }
                 else {
@@ -157,9 +170,7 @@ public class Chess {
             try {
                 if(!firstLoop) System.out.println(Color.BOLD + Color.RED + "Mauvais move" + Color.RESET);
                 firstLoop = false;
-                if(isCheckMate(kings[currentPlayer.getColor()]) == State.CHECK) {
-                    System.out.println("Echec !");
-                }
+
                 response = askString(currentPlayer.getName() + ", ton move ? (Un mouvement comme 'B8C8' ou 'C5H7')").toUpperCase();
                 if(response.length() != 4) continue;
 
@@ -180,6 +191,7 @@ public class Chess {
     }
 
     private boolean isValidMove(String move) {
+        highlightedCells.clear();
         Cell[] cells = getCellsFromMove(move);
         Cell cell = cells[0];
         Cell newCell = cells[1];
@@ -195,6 +207,7 @@ public class Chess {
             return false;
         };
         Set<Cell> moves = getPotentialMoves(piece);
+        highlightedCells = moves;
 
         if(!moves.contains(newCell)) return false;
 
@@ -209,19 +222,19 @@ public class Chess {
         Position position = piece.getPosition();
         Set<Cell> moves = new HashSet<>();
 
-        if(piece instanceof Pion || piece instanceof DummyKing) {
+        if(piece instanceof Pawn || piece instanceof DummyKing) {
             Cell potentialCell;
             // Vers l'avant, 1 case
             potentialCell = getCell(position.getColumn(), position.getRow() + piece.forward(1));
             if(potentialCell != null) {
                 if(potentialCell.isEmpty()) moves.add(potentialCell);
-            }
 
-            // Vers l'avant, 1 case
-            if(!piece.isHasMovedOnce()) {
-                potentialCell = getCell(position.getColumn(), position.getRow() + piece.forward(2));
-                if(potentialCell != null) {
-                    if (potentialCell.isEmpty()) moves.add(potentialCell);
+                // Vers l'avant, 2 case
+                if(!piece.isHasMovedOnce()) {
+                    potentialCell = getCell(position.getColumn(), position.getRow() + piece.forward(2));
+                    if(potentialCell != null) {
+                        if (potentialCell.isEmpty()) moves.add(potentialCell);
+                    }
                 }
             }
 
@@ -230,7 +243,7 @@ public class Chess {
                 int colOffset = i == 0 ? -1 : 1;
                 potentialCell = getCell(position.getColumn() + colOffset, position.getRow() + piece.forward(1));
                 if(potentialCell != null) {
-                    if(potentialCell != null && !potentialCell.isEmpty()) moves.add(potentialCell);
+                    if(potentialCell != null && !potentialCell.isEmpty() && potentialCell.getPiece().getColor() != piece.getColor()) moves.add(potentialCell);
                 }
             }
         }
@@ -401,10 +414,15 @@ public class Chess {
         movesStream = movesStream.filter(cell -> cell.getPiece().getColor() != king.getColor());
         movesStream = movesStream.filter(cell -> {
             if(cell.getPiece() instanceof King) return false;
-            return getPotentialMoves(cell.getPiece()).stream().filter(c -> !c.isEmpty()).toList().size() > 0;
+            return getPotentialMoves(cell.getPiece()).stream().filter(c -> !c.isEmpty() && c.getPiece().equals(king)).toList().size() > 0;
         });
 
         List<Cell> kingAttackedBy = movesStream.toList();
+
+        if(level == 0) kingAttackedBy.forEach(cell -> {
+            Piece piece = cell.getPiece();
+            System.out.println(king + " " + king.getName() + Color.RESET + " attaqué par " + piece + " " + piece.getName());
+        });
 
         if(kingAttackedBy.size() > 0) {
             boolean nahHeTweaking = false;
@@ -448,6 +466,11 @@ public class Chess {
         board[potentialMove.getPosition().getColumn()][potentialMove.getPosition().getRow()].setPiece(oldPiece);
         return !nahHeTweaking;
     }
+
+    private int getNumberOfMove(int color) {
+
+    }
+
 
     private Cell[][] cloneBoard(Cell[][] board) {
         Cell[][] clonedBoard = new Cell[8][8];

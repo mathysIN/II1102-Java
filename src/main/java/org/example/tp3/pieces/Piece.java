@@ -24,6 +24,10 @@ public abstract class Piece {
         return getRenderColor() + icon;
     }
 
+    public String getName() {
+        return this.getClass().getSimpleName();
+    }
+
     public Position getPosition() {
         return position;
     }
