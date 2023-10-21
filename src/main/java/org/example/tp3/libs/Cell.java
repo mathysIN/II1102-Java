@@ -5,8 +5,6 @@ import org.example.tp3.pieces.Piece;
 public class Cell {
     private Position position;
     private Piece piece;
-    private boolean isEmpty;
-
     public Cell(Position position) {
         this.position = position;
     }
@@ -25,23 +23,18 @@ public class Cell {
 
     public void setPiece(Piece piece) {
         this.piece = piece;
+        if(piece != null) piece.setPosition(this.getPosition(), true);
     }
 
     public boolean isEmpty() {
         return piece == null;
 //        return isEmpty;
     }
-
-    public void setEmpty(boolean empty) {
-        isEmpty = empty;
-    }
-
     @Override
     public String toString() {
         return "Cell{" +
                 "position=" + position +
                 ", piece=" + piece +
-                ", isEmpty=" + isEmpty +
                 '}';
     }
 }

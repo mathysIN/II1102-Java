@@ -1,10 +1,18 @@
 package org.example.tp3;
 
 import org.example.tp3.libs.*;
+import org.example.tp3.moves.Castling;
+import org.example.tp3.moves.EnPassant;
+import org.example.tp3.moves.Move;
+import org.example.tp3.moves.Promotion;
 import org.example.tp3.pieces.*;
 
 import java.util.*;
 import java.util.stream.Stream;
+
+// FIXME: Il y a peut être un problème de recursion de function au test des echecs
+// Le programme semble rammer lors d'un echec : La recursion va potentiellement 1 niveau trop bas mais j'ai ni le temps
+// ni le budget de continuer à développer ce jeu
 
 public class Chess {
     private Scanner scanner = new Scanner(System.in);
@@ -13,7 +21,16 @@ public class Chess {
     private Player[] players = new Player[2];
     private Player currentPlayer;
     private King[] kings = new King[2];
-    private Piece selectedPiece;
+    private Position dummyPosition = new Position(0, 0);
+    private ArrayList<Piece> availablePromotions = new ArrayList<>() {
+        {
+            add(new Queen(dummyPosition, 0));
+            add(new Rook(dummyPosition, 0));
+            add(new Knight(dummyPosition, 0));
+            add(new Bishop(dummyPosition, 0));
+            add(new Pawn(dummyPosition, 0));
+        }
+    };
     private final static List<String> playerColors = new ArrayList() {
         {
             add(Color.PURPLE);
@@ -25,9 +42,6 @@ public class Chess {
         createPlayers();
         System.out.println(Color.BOLD + Color.BLUE + "C'est parti !".toUpperCase() + Color.RESET);
         initialiseBoard();
-//        ArrayList<String> predefinedMoves = new ArrayList<>() {
-//            add()
-//        }
         while (true) {
             String move;
             System.out.println("\nC'est au tour de " + Color.BOLD + currentPlayer.getName() + " de jouer !");
@@ -45,9 +59,10 @@ public class Chess {
             switchPlayer();
             King king = kings[currentPlayer.getColor()];
             State state = isCheckMate(king);
-            Cell[] _move = getCellsFromMove(move);
-            boolean futureCheckMate = isFuturCheckMate(king, _move[0], _move[1]);
-            if(state == State.NONE && futureCheckMate) {
+
+            if(state == State.NONE && isPat(currentPlayer.getColor())) {
+                printBoard();
+                System.out.flush();
                 System.out.println();
                 System.out.println(Color.BOLD + Color.YELLOW + "Pat !" + Color.RESET);
                 System.out.println("Egalité");
@@ -57,9 +72,8 @@ public class Chess {
                 System.out.println(Color.BOLD + Color.YELLOW + "Echec !" + Color.RESET);
             }
             if(state == State.CHECKMATE) {
-                 printBoard();
-                 System.out.flush();
-                // FIXME: is printed too late
+                printBoard();
+                System.out.flush();
 
                 System.out.println();
                 System.out.println(Color.BOLD + Color.YELLOW + "Echec et mat!" + Color.RESET);
@@ -82,26 +96,26 @@ public class Chess {
 
     private void initialiseBoard() {
         board = new Cell[8][8];
-        for (int i = 0; i < 8; i++) {
-            for (int j = 0; j < 8; j++) {
-                board[i][j] = new Cell(new Position(i, j));
+        for (int column = 0; column < 8; column++) {
+            for (int row = 0; row < 8; row++) {
+                board[column][row] = new Cell(new Position(column, row));
             }
         }
 
-        for (int i = 0; i < 2; i++) {
-            for (int j = 0; j < 8; j++) {
-                board[j][i == 0 ? 6 : 1].setPiece(new Pawn(board[j][i == 0 ? 6 : 1].getPosition(), i));
+        for (int color = 0; color < 2; color++) {
+            for (int column = 0; column < 8; column++) {
+                board[column][color == 0 ? 6 : 1].setPiece(new Pawn(board[column][color == 0 ? 6 : 1].getPosition(), color));
             }
-            for (int j = 0; j < 2; j++) {
-                board[j == 0 ? 0 : 7][i == 0 ? 7 : 0].setPiece(new Rook(board[j == 0 ? 0 : 7][i == 0 ? 7 : 0].getPosition(), i));
-                board[j == 0 ? 1 : 6][i == 0 ? 7 : 0].setPiece(new Knight(board[j == 0 ? 1 : 6][i == 0 ? 7 : 0].getPosition(), i));
-                board[j == 0 ? 2 : 5][i == 0 ? 7 : 0].setPiece(new Bishop(board[j == 0 ? 2 : 5][i == 0 ? 7 : 0].getPosition(), i));
+            for (int column = 0; column < 2; column++) {
+                board[column == 0 ? 0 : 7][color == 0 ? 7 : 0].setPiece(new Rook(board[column == 0 ? 0 : 7][color == 0 ? 7 : 0].getPosition(), color));
+                    board[column == 0 ? 1 : 6][color == 0 ? 7 : 0].setPiece(new Knight(board[column == 0 ? 1 : 6][color == 0 ? 7 : 0].getPosition(), color));
+                board[column == 0 ? 2 : 5][color == 0 ? 7 : 0].setPiece(new Bishop(board[column == 0 ? 2 : 5][color == 0 ? 7 : 0].getPosition(), color));
             }
 
-            board[3][i == 0 ? 7 : 0].setPiece(new Queen(new Position(3, i == 0 ? 7 : 0), i));
-            King king = new King(new Position(4, i == 0 ? 7 : 0), i);
-            kings[i] = king;
-            board[4][i == 0 ? 7 : 0].setPiece(king);
+            board[3][color == 0 ? 7 : 0].setPiece(new Queen(new Position(3, color == 0 ? 7 : 0), color));
+            King king = new King(new Position(4, color == 0 ? 7 : 0), color);
+            kings[color] = king;
+            board[4][color == 0 ? 7 : 0].setPiece(king);
         }
     }
 
@@ -114,7 +128,7 @@ public class Chess {
                 Cell cell = board[j][i];
                 if(cell == null) continue;
                 if(j == 0) System.out.print((8 - i) + " ");
-                if(highlightedCells.contains(cell)) {
+                if(highlightedCells.stream().filter(c -> c.getPosition().equals(cell.getPosition())).findFirst().orElseGet(() -> null) != null) {
                     System.out.print(Color.BACKGROUND_YELLOW);
                 }
                 else {
@@ -195,58 +209,92 @@ public class Chess {
         Cell[] cells = getCellsFromMove(move);
         Cell cell = cells[0];
         Cell newCell = cells[1];
-        if(cell.isEmpty()) {
+        if (cell.isEmpty()) {
             System.out.println(Color.BOLD + Color.RED + "Pas de pièces");
             return false;
-        };
+        }
+        ;
         Piece piece = cell.getPiece();
-        selectedPiece = piece;
 
-        if(piece.getColor() != currentPlayer.getColor()) {
+        if (piece.getColor() != currentPlayer.getColor()) {
             System.out.println(Color.BOLD + Color.RED + "Pas ta pièce");
             return false;
-        };
+        }
+        ;
         Set<Cell> moves = getPotentialMoves(piece);
         highlightedCells = moves;
 
-        if(!moves.contains(newCell)) return false;
-
-        King king = kings[currentPlayer.getColor()];
-
-        if(isFuturCheckMate(king, cell, newCell)) return false;
+        Cell selectedMove = moves.stream().filter(cell1 -> cell1.getPosition().equals(newCell.getPosition())).findFirst().orElseGet(() -> null);
+        if(selectedMove == null) return false;
 
         return true;
     }
 
     private Set<Cell> getPotentialMoves(Piece piece) {
+        return getPotentialMoves(piece, 0);
+    }
+
+    private Set<Cell> getPotentialMoves(Piece piece, int level) {
         Position position = piece.getPosition();
         Set<Cell> moves = new HashSet<>();
+        Cell cell = getCell(position.getColumn(), position.getRow());
 
         if(piece instanceof Pawn || piece instanceof DummyKing) {
             Cell potentialCell;
             // Vers l'avant, 1 case
             potentialCell = getCell(position.getColumn(), position.getRow() + piece.forward(1));
             if(potentialCell != null) {
-                if(potentialCell.isEmpty()) moves.add(potentialCell);
+                if(potentialCell.isEmpty()) {
+                    moves.add(potentialCell);
 
-                // Vers l'avant, 2 case
-                if(!piece.isHasMovedOnce()) {
-                    potentialCell = getCell(position.getColumn(), position.getRow() + piece.forward(2));
-                    if(potentialCell != null) {
-                        if (potentialCell.isEmpty()) moves.add(potentialCell);
+                    // Vers l'avant, 2 case
+                    if(!piece.hasMovedOnce()) {
+                        potentialCell = getCell(position.getColumn(), position.getRow() + piece.forward(2));
+                        if(potentialCell != null) {
+                            if (potentialCell.isEmpty()) moves.add(potentialCell);
+                        }
                     }
                 }
+
             }
 
             // Diagonale droite gauche, manger
             for (int i = 0; i < 2; i++) {
-                int colOffset = i == 0 ? -1 : 1;
+                int colOffset = i == 0 ? 1 : -1;
                 potentialCell = getCell(position.getColumn() + colOffset, position.getRow() + piece.forward(1));
                 if(potentialCell != null) {
-                    if(potentialCell != null && !potentialCell.isEmpty() && potentialCell.getPiece().getColor() != piece.getColor()) moves.add(potentialCell);
+                    if(!potentialCell.isEmpty() && potentialCell.getPiece().getColor() != piece.getColor()) moves.add(potentialCell);
+                }
+            }
+
+            // En passant
+            for (int i = 0; i < 2; i++) {
+                int colOffset = i == 0 ? 1 : -1;
+                potentialCell = getCell(position.getColumn() + colOffset, position.getRow() + piece.forward(1));
+                if(potentialCell != null) {
+                    Cell potentialCellEnPassant = getCell(position.getColumn() + colOffset, position.getRow());
+                    if(potentialCellEnPassant != null && !potentialCellEnPassant.isEmpty() && potentialCellEnPassant.getPiece().getColor() != piece.getColor()) {
+                        if(potentialCellEnPassant.getPiece() instanceof Pawn && ((Pawn) potentialCellEnPassant.getPiece()).canBeEnPassant())
+                        moves.add(new EnPassant(potentialCell.getPosition(), potentialCellEnPassant));
+                    };
+                }
+            }
+
+            // Promotions
+            if(!(piece instanceof DummyKing)) {
+                Set<Cell> tempMoves = new HashSet<>();
+                tempMoves.addAll(moves);
+                for(Cell move : tempMoves) {
+                    int row = move.getPosition().getRow();
+                    if(piece.getColor() == 0 ? row == 0 : row == 7 ) {
+                        moves.remove(move);
+                        moves.add(new Promotion(move.getPosition()));
+                    }
                 }
             }
         }
+
+
 
         if(piece instanceof Bishop || piece instanceof Queen || piece instanceof DummyKing) {
             Cell potentialCell;
@@ -278,6 +326,7 @@ public class Chess {
             }
         }
 
+
         if(piece instanceof Rook || piece instanceof Queen || piece instanceof DummyKing) {
             Cell potentialCell;
             // Ligne dans les 4 directions
@@ -305,6 +354,7 @@ public class Chess {
                 }
             }
         }
+
 
         if(piece instanceof Knight || piece instanceof DummyKing) {
             Cell potentialCell;
@@ -334,26 +384,71 @@ public class Chess {
             }
         }
 
+
         if(piece instanceof King && !(piece instanceof DummyKing)) {
             Cell potentialCell;
+            // 8 cases adjacentes
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 3; j++) {
                     potentialCell = getCell(position.getColumn() + i -1 , position.getRow() + j - 1);
                     if(potentialCell != null) {
                         if(potentialCell.getPosition().equals(position)) continue;
                         if(!potentialCell.isEmpty() && potentialCell.getPiece().getColor() == currentPlayer.getColor()) continue;
-                        if(isCheckMate(new King(potentialCell.getPosition(), piece.getColor())) != State.NONE) continue;
+
                         moves.add(potentialCell);
                     }
                 }
             }
+
+            // Rock
+            if(!piece.hasMovedOnce()) {
+                for (int i = 0; i < 2; i++) {
+                    Cell tempCell = getCell(i == 0 ? 0 : 7, position.getRow());
+                    if(tempCell.isEmpty()) continue;
+                    if(!(tempCell.getPiece() instanceof Rook)) continue;
+                    Rook rook = null;
+                    for (int j = 1; true; j++) {
+                        Cell _tempCell = getCell(position.getColumn() + (i == 0 ? j : -j), position.getRow());
+                        if(_tempCell.isEmpty()) continue;
+
+                        if(_tempCell.getPiece().getColor() == currentPlayer.getColor() && _tempCell.getPiece() instanceof Rook) {
+                            rook = (Rook) _tempCell.getPiece();
+                            break;
+                        }
+                        break;
+                    }
+                    if(rook == null) continue;
+                    if(rook.hasMovedOnce()) continue;
+                    moves.add(new Castling(new Position(position.getColumn() + (i == 0 ? 2 : -2), position.getRow()), getCell(rook.getPosition()), getCell(position.getColumn() + (i == 0 ? 1 : -1), position.getRow())));
+                }
+            }
+
+
+
+
         }
+
+        if(!(piece instanceof DummyKing) && level == 0) {
+            Set<Cell> tempMoves = new HashSet<>();
+            tempMoves.addAll(moves);
+
+            for(Cell move : tempMoves) {
+                King king = kings[currentPlayer.getColor()];
+                boolean c = isFuturCheckMate(king, cell, move, 0);
+                if(c) moves.remove(move);
+            }
+        }
+
+
         return moves;
+    }
+
+    private Cell getCell(Position position) {
+        return getCell(position.getColumn(), position.getRow());
     }
 
     private Cell getCell(int col, int row) {
         try {
-//            System.out.println("got" + board[col][row].getPosition().getColumn() + " " + board[col][row].getPosition().getRow());
             return board[col][row];
         }
         catch (Exception e) {
@@ -370,9 +465,60 @@ public class Chess {
             currentPlayer.addEatenPiece(newCell.getPiece());
         }
 
+        Cell _move = getPotentialMoves(cell.getPiece()).stream().filter(cell1 -> cell1.getPosition().equals(newCell.getPosition())).findFirst().orElseGet(null);
+        if(_move == null) throw new RuntimeException("Move should not be null");
+
+        Piece piece = cell.getPiece();
         cell.getPiece().setPosition(newCell.getPosition());
-        newCell.setPiece(cell.getPiece());
         cell.setPiece(null);
+        newCell.setPiece(piece);
+        piece.setHasMovedOnce(true);
+
+        if(_move instanceof Move) {
+            if(_move instanceof EnPassant) {
+                EnPassant enPassant = (EnPassant) _move;
+                currentPlayer.addEatenPiece(enPassant.getAttackedPawn().getPiece());
+                enPassant.getAttackedPawn().setPiece(null);
+            }
+            if(_move instanceof Promotion) {
+                System.out.println("Promotion time!!! Choisis une promotion pour ton pion");
+                for (int i = 0; i < availablePromotions.size(); i++) {
+                    System.out.print((i + 1) + " - ");
+                    System.out.print(availablePromotions.get(i).getDisplayName());
+                    System.out.print("\n");
+                }
+
+                System.out.println();
+                Piece promotedPiece = null;
+                while (true) {
+                    try {
+                        int output = askInt("");
+                        promotedPiece = availablePromotions.get(output - 1);
+                        if(promotedPiece != null) break;
+                    }
+                    catch (RuntimeException e) {}
+                }
+
+                try {
+                    newCell.setPiece(promotedPiece.getClass().cast(promotedPiece.getClass().getConstructors()[0].newInstance(newCell.getPosition(), currentPlayer.getColor())) );
+                }
+
+                catch (Exception e) {
+                    e.printStackTrace();
+                    throw new RuntimeException("Une erreur a eu lieu lors de la promotion de la pièce");
+                }
+
+                System.out.print("Très bien, tu as selectionné " + promotedPiece.getDisplayName() + " !");
+
+            }
+            if(_move instanceof Castling) {
+                Castling castling = (Castling) _move;
+                Cell targetedRook = castling.getTargetedRook();
+                castling.getNewRookCell().setPiece(targetedRook.getPiece());
+                targetedRook.setPiece(null);
+            }
+        }
+
     }
 
     private void switchPlayer() {
@@ -382,6 +528,23 @@ public class Chess {
     private String askString(String message) {
         System.out.print(message + "\n> ");
         return scanner.next();
+    }
+
+    private int askInt(String message) {
+        System.out.print(message + "\n> ");
+        int output;
+        while (true) {
+            try {
+                output = scanner.nextInt();
+                break;
+            }
+            catch (Exception e) {
+                scanner.nextLine();
+
+                System.out.print("> "); // ?
+            }
+        }
+        return output;
     }
 
     public static String getPlayerRenderColor(int color) {
@@ -414,19 +577,15 @@ public class Chess {
         movesStream = movesStream.filter(cell -> cell.getPiece().getColor() != king.getColor());
         movesStream = movesStream.filter(cell -> {
             if(cell.getPiece() instanceof King) return false;
-            return getPotentialMoves(cell.getPiece()).stream().filter(c -> !c.isEmpty() && c.getPiece().equals(king)).toList().size() > 0;
+            int t = getPotentialMoves(cell.getPiece(), 1).stream().filter(c -> c.getPosition().equals(king.getPosition())).toList().size();
+            return t > 0;
         });
 
         List<Cell> kingAttackedBy = movesStream.toList();
 
-        if(level == 0) kingAttackedBy.forEach(cell -> {
-            Piece piece = cell.getPiece();
-            System.out.println(king + " " + king.getName() + Color.RESET + " attaqué par " + piece + " " + piece.getName());
-        });
-
         if(kingAttackedBy.size() > 0) {
             boolean nahHeTweaking = false;
-            if (level == 0) {
+            if (level < 1) {
                 for (int i = 0; i < board.length; i++) {
                     if (nahHeTweaking) break;
                     Cell[] column = board[i];
@@ -436,9 +595,9 @@ public class Chess {
                         if (cell.isEmpty()) continue;
                         Piece piece = cell.getPiece();
                         if (piece.getColor() != king.getColor()) continue;
-                        if (piece instanceof King) continue;
-                        for (Cell potentialMove : getPotentialMoves(piece)) {
-                            nahHeTweaking = !isFuturCheckMate(king, cell, potentialMove);
+                        Set<Cell> potentialMoves =  getPotentialMoves(piece);
+                        for (Cell potentialMove : potentialMoves) {
+                            nahHeTweaking = !isFuturCheckMate(king, cell, potentialMove, level);
                             if(nahHeTweaking) break;
                         }
                     }
@@ -450,37 +609,31 @@ public class Chess {
         return state;
     }
 
-    private boolean isFuturCheckMate(King king, Cell cell, Cell potentialMove) {
+    private boolean isFuturCheckMate(King king, Cell cell, Cell potentialMove, int level) {
         Position position = cell.getPosition();
         Piece piece = cell.getPiece();
         Piece oldPiece = board[potentialMove.getPosition().getColumn()][potentialMove.getPosition().getRow()].getPiece();
-        if(piece instanceof Queen) {
-            System.out.println();
-        }
+
         board[position.getColumn()][position.getRow()].setPiece(null);
         board[potentialMove.getPosition().getColumn()][potentialMove.getPosition().getRow()].setPiece(piece);
 
-        boolean nahHeTweaking = isCheckMate(king, 1) == State.NONE ;
+        boolean nahHeTweaking = isCheckMate(king, level + 1) == State.NONE ;
 
         board[position.getColumn()][position.getRow()].setPiece(piece);
         board[potentialMove.getPosition().getColumn()][potentialMove.getPosition().getRow()].setPiece(oldPiece);
         return !nahHeTweaking;
     }
 
-    private int getNumberOfMove(int color) {
-
-    }
-
-
-    private Cell[][] cloneBoard(Cell[][] board) {
-        Cell[][] clonedBoard = new Cell[8][8];
+    private boolean isPat(int color) {
         for (int i = 0; i < board.length; i++) {
             Cell[] column = board[i];
             for (int j = 0; j < column.length; j++) {
-                clonedBoard[i][j] = new Cell(new Position(column[j].getPosition().getColumn(), column[j].getPosition().getRow()));
-                clonedBoard[i][j].setPiece(column[j].getPiece());
+                Cell cell = column[j];
+                if(cell.isEmpty()) continue;
+                if(cell.getPiece().getColor() != color) continue;
+                if(getPotentialMoves(cell.getPiece()).size() != 0) return false;
             }
         }
-        return clonedBoard;
+        return true;
     }
 }

@@ -32,4 +32,11 @@ public class Position {
                 ", row=" + row +
                 '}';
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(!(obj instanceof Position)) return false;
+        Position cellObj = (Position) obj;
+        return cellObj.getRow() == this.getRow() && cellObj.getColumn() == this.getColumn();
+    }
 }

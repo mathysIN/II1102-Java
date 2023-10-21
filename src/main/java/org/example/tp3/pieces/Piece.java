@@ -6,7 +6,7 @@ import org.example.tp3.libs.Position;
 public abstract class Piece {
     private Position position;
     private int color;
-    private char icon = '?';
+    protected char icon = '?';
     private boolean hasMovedOnce = false;
     private int score = 0;
 
@@ -28,12 +28,19 @@ public abstract class Piece {
         return this.getClass().getSimpleName();
     }
 
+    public String getDisplayName() {
+        return getIcon() + " " + this.getName();
+    }
+
     public Position getPosition() {
         return position;
     }
 
     public void setPosition(Position position) {
-        if(!hasMovedOnce) hasMovedOnce = true;
+        setPosition(position, false);
+    }
+
+    public void setPosition(Position position, boolean superficial) {
         this.position = position;
     }
 
@@ -45,8 +52,12 @@ public abstract class Piece {
         return Chess.getPlayerRenderColor(color);
     }
 
-    public boolean isHasMovedOnce() {
+    public boolean hasMovedOnce() {
         return hasMovedOnce;
+    }
+
+    public void setHasMovedOnce(boolean hasMovedOnce) {
+        this.hasMovedOnce = hasMovedOnce;
     }
 
     public void setColor(int color) {
@@ -68,4 +79,5 @@ public abstract class Piece {
     public void setScore(int score) {
         this.score = score;
     }
+
 }
