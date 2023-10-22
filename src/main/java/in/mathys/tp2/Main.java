@@ -1,4 +1,4 @@
-package in.mathys.TP2;
+package in.mathys.tp2;
 
 import java.util.*;
 

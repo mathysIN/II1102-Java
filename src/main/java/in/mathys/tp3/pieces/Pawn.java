@@ -1,13 +1,14 @@
-package in.mathys.TP3.pieces;
+package in.mathys.tp3.pieces;
 
-import in.mathys.TP3.libs.Position;
+import in.mathys.tp3.libs.Position;
+import in.mathys.tp3.libs.text.Icons;
 
 public class Pawn extends Piece {
     private boolean enPassant = false;
 
     public Pawn(Position position, int color) {
         super(position, color);
-        setIcon('♟');
+        setIcon(Icons.PAWN);
         setScore(1);
     }
 

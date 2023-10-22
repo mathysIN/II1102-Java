@@ -1,4 +1,4 @@
-package in.mathys.TP3.libs;
+package in.mathys.tp3.libs.text;
 
 public class Color {
     public static final String RESET = "\u001B[0m";

@@ -1,4 +1,4 @@
-package in.mathys.TP3.libs;
+package in.mathys.tp3.libs.text;
 
 public class Chars {
     public final static int A = 65;

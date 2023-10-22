@@ -1,7 +1,8 @@
-package in.mathys.TP3.libs;
+package in.mathys.tp3.libs;
 
-import in.mathys.TP3.Chess;
-import in.mathys.TP3.pieces.Piece;
+import in.mathys.tp3.Chess;
+import in.mathys.tp3.libs.text.Color;
+import in.mathys.tp3.pieces.Piece;
 
 import java.util.ArrayList;
 import java.util.List;

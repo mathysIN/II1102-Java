@@ -1,7 +1,7 @@
-package in.mathys.TP3.moves;
+package in.mathys.tp3.moves;
 
-import in.mathys.TP3.libs.Cell;
-import in.mathys.TP3.libs.Position;
+import in.mathys.tp3.libs.Cell;
+import in.mathys.tp3.libs.Position;
 
 public abstract class Move extends Cell {
     public Move(Position position) {

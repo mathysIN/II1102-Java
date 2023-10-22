@@ -1,11 +1,14 @@
-package in.mathys.TP3;
+package in.mathys.tp3;
 
-import in.mathys.TP3.libs.*;
-import in.mathys.TP3.pieces.*;
-import in.mathys.TP3.moves.Castling;
-import in.mathys.TP3.moves.EnPassant;
-import in.mathys.TP3.moves.Move;
-import in.mathys.TP3.moves.Promotion;
+import in.mathys.tp3.libs.*;
+import in.mathys.tp3.libs.text.Chars;
+import in.mathys.tp3.libs.text.Color;
+import in.mathys.tp3.libs.text.Icons;
+import in.mathys.tp3.pieces.*;
+import in.mathys.tp3.moves.Castling;
+import in.mathys.tp3.moves.EnPassant;
+import in.mathys.tp3.moves.Move;
+import in.mathys.tp3.moves.Promotion;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -146,7 +149,7 @@ public class Chess {
             if(i == 2 || i == 4) {
                 Player tempPlayer = players[i == 2 ? 0 : 1];
                 System.out.print("\t\t\t");
-                System.out.print(Color.BOLD + tempPlayer.getRenderColor() + "\uD83D\uDC64");
+                System.out.print(Color.BOLD + tempPlayer.getRenderColor() + Icons.SHIELD);
                 System.out.print(" ");
                 System.out.print(tempPlayer.getName());
             }

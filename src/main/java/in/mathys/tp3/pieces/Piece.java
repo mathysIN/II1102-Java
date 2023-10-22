@@ -1,12 +1,13 @@
-package in.mathys.TP3.pieces;
+package in.mathys.tp3.pieces;
 
-import in.mathys.TP3.Chess;
-import in.mathys.TP3.libs.Position;
+import in.mathys.tp3.Chess;
+import in.mathys.tp3.libs.Position;
+import in.mathys.tp3.libs.text.Icons;
 
 public abstract class Piece {
     private Position position;
     private int color;
-    protected char icon = '?';
+    protected char icon = Icons.UNKNOWN;
     private boolean hasMovedOnce = false;
     private int score = 0;
 

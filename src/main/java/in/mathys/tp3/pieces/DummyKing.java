@@ -1,4 +1,4 @@
-package in.mathys.TP3.pieces;
+package in.mathys.tp3.pieces;
 
 public class DummyKing extends King {
     King king;

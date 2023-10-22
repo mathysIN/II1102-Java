@@ -1,4 +1,4 @@
-package in.mathys.QUIZ1;
+package in.mathys.quiz;
 
 public class TP_Pratique_G_A {
 

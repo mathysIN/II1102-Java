@@ -1,4 +1,4 @@
-package in.mathys.TP1;
+package in.mathys.tp1;
 
 import java.util.ArrayList;
 import java.util.List;

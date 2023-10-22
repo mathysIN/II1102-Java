@@ -1,6 +1,6 @@
-package in.mathys.TP3.libs;
+package in.mathys.tp3.libs;
 
-import in.mathys.TP3.pieces.Piece;
+import in.mathys.tp3.pieces.Piece;
 
 public class Cell {
     private Position position;
