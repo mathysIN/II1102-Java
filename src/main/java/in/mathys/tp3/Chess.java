@@ -97,7 +97,7 @@ public class Chess {
         currentPlayer = players[0];
     }
 
-    private void initialiseBoard() {
+    protected void initialiseBoard() {
         board = new Cell[8][8];
         for (int column = 0; column < 8; column++) {
             for (int row = 0; row < 8; row++) {
@@ -446,11 +446,11 @@ public class Chess {
         return moves;
     }
 
-    private Cell getCell(Position position) {
+    protected Cell getCell(Position position) {
         return getCell(position.getColumn(), position.getRow());
     }
 
-    private Cell getCell(int col, int row) {
+    protected Cell getCell(int col, int row) {
         try {
             return board[col][row];
         }
@@ -638,5 +638,33 @@ public class Chess {
             }
         }
         return true;
+    }
+
+    public Cell[][] getBoard() {
+        return board;
+    }
+
+    public Set<Cell> getHighlightedCells() {
+        return highlightedCells;
+    }
+
+    public Player[] getPlayers() {
+        return players;
+    }
+
+    public Player getCurrentPlayer() {
+        return currentPlayer;
+    }
+
+    public King[] getKings() {
+        return kings;
+    }
+
+    public Position getDummyPosition() {
+        return dummyPosition;
+    }
+
+    public ArrayList<Piece> getAvailablePromotions() {
+        return availablePromotions;
     }
 }
